@@ -35,7 +35,7 @@ class WakeOnLan(object):
             WakeOnLan()(*command_line_args)
     """
 
-    new_config_dir = '~/.config/bentasker.Wake-On-Lan-Python'
+    new_config_dir = './'
     config_file_name = 'wol_config.ini'
 
     def __init__(self, *extra_search_paths, prefer_local_config=False, **config):

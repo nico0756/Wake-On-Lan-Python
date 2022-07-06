@@ -108,7 +108,8 @@ class WakeOnLan(object):
             raise ValueError('Incorrect MAC address format')
 
         # Pad the synchronization stream.
-        data = ''.join(['FFFFFFFFFFFF', mac_address * 20])
+        # Magic Packet must have 16 times mac address
+        data = ''.join(['FFFFFFFFFFFF', mac_address * 16])
         send_data = b''
 
         # Split up the hex values and pack.
@@ -121,7 +122,11 @@ class WakeOnLan(object):
         # Broadcast it to the LAN.
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        sock.sendto(send_data, (config['General']['broadcast'], 7))
+        # Send 3 times just to be sure
+        # Port 9 is the default for WOL
+        sock.sendto(send_data, (config['General']['broadcast'], 9))
+        sock.sendto(send_data, (config['General']['broadcast'], 9))
+        sock.sendto(send_data, (config['General']['broadcast'], 9))
         return True
 
     def write_config(self, config_parser: ConfigParser) -> None:
@@ -137,7 +142,17 @@ class WakeOnLan(object):
             return config_parser
 
         # Get broadcast ip dynamically
-        local_ip = socket.gethostbyname(socket.gethostname())
+        local_ip = ''
+        try:
+            local_ip = socket.gethostbyname(socket.gethostname())
+        except:
+            # socket.gethostbyname(socket.gethostname()) could generate exception on some devices,
+            # try other method
+            socket_temp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            socket_temp.connect(("8.8.8.8", 80))
+            #print(socket_temp.getsockname()[0])
+            local_ip = socket_temp.getsockname()[0]
+            socket_temp.close()
         local_ip = local_ip.rsplit('.', 1)
         local_ip[1] = '255'
         broadcast_ip = '.'.join(local_ip)
